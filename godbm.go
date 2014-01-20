@@ -41,7 +41,7 @@ func (e *UnknownStmtError) Error() string {
 	return "godbm: error " + e.StmtKey + " was not found"
 }
 
-// UnknownStmtError holds the invalid key which was attempted in a look up.
+// ConnectionError
 type ConnectionError struct{}
 
 // Returned when the supplied key for looking up a prepared statement does not exist.
@@ -49,32 +49,40 @@ func (e *ConnectionError) Error() string {
 	return "godbm: error not connected to the database"
 }
 
-// DataStoreOptions contains the database type (pq, etc) and the connection string
-type DataStoreOptions struct {
-	ConnectionString string // the connection string for the sql driver
-	DbType           string // the database driver name
-}
-
 // SqlStore holds a reference to the database, a list of prepared statements
 // and a boolean for if we are connected.
 type SqlStore struct {
 	sync.RWMutex                      // a mutex to synchronize new statements.
-	db           *sql.DB              // the database connection
-	queries      map[string]*sql.Stmt // a map of prepared statements referenced by the key
-	options      DataStoreOptions     // our database options
 	Connected    bool                 // indicates if we are connected or not.
+	db           *sql.DB              // the underlying database reference
+	queries      map[string]*sql.Stmt // a map of prepared statements referenced by the key
+	username     string               // database username
+	password     string               // database password
+	dbname       string               // database name to connect to
+	host         string               // database host
+	sslmode      string               // whether we use ssl or not to connect.
+
 }
 
-func New() *SqlStore {
-	return new(SqlStore)
+// New creates a new *SqlStore with the connection properties as arguments.
+func New(username, password, dbname, host string, useSsl bool) *SqlStore {
+	s := new(SqlStore)
+	s.username = username
+	s.password = password
+	s.host = host
+	s.dbname = dbname
+	s.sslmode = "disable"
+	if useSsl {
+		s.sslmode = "enable"
+	}
+	return s
 }
 
-// Connect connects to the database with the provided DataStoreOptions information.
-// Returns err on sql.Open error or sets our connected state to true.
-func (store *SqlStore) Connect(options *DataStoreOptions) (err error) {
-	store.options = *options
+// Connect connects to the database. Returns err on sql.Open error or sets
+// our connected state to true.
+func (store *SqlStore) Connect() (err error) {
 	store.Connected = false
-	store.db, err = sql.Open(options.DbType, options.ConnectionString)
+	store.db, err = sql.Open("postgres", "user="+store.username+" password="+store.password+" dbname="+store.dbname+" host="+store.host+" sslmode="+store.sslmode)
 	if err != nil {
 		return err
 	}
