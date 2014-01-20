@@ -52,7 +52,7 @@ func (e *ConnectionError) Error() string {
 // SqlStore holds a reference to the database, a list of prepared statements
 // and a boolean for if we are connected.
 type SqlStore struct {
-	sync.RWMutex                      // a mutex to synchronize new statements.
+	sync.RWMutex                      // a mutex to synchronize adding/calling/removing new statements.
 	Connected    bool                 // indicates if we are connected or not.
 	db           *sql.DB              // the underlying database reference
 	queries      map[string]*sql.Stmt // a map of prepared statements referenced by the key
@@ -178,7 +178,6 @@ func (store *SqlStore) PrepareDel(key string) (err error) {
 	if !store.Connected {
 		return &ConnectionError{}
 	}
-
 	defer store.Unlock()
 
 	store.Lock()
@@ -198,10 +197,10 @@ func (store *SqlStore) QueryPrepared(key string, data ...interface{}) (rows *sql
 	if !store.Connected {
 		return nil, &ConnectionError{}
 	}
+	defer store.RUnlock()
 
 	store.RLock()
 	stmt, found := store.queries[key]
-	store.RUnlock()
 	if !found {
 		return nil, &UnknownStmtError{StmtKey: key}
 	}
@@ -215,10 +214,10 @@ func (store *SqlStore) ExecPrepared(key string, data ...interface{}) (result sql
 	if !store.Connected {
 		return nil, &ConnectionError{}
 	}
+	defer store.RUnlock()
 
 	store.RLock()
 	stmt, found := store.queries[key]
-	store.RUnlock()
 	if !found {
 		return nil, &UnknownStmtError{StmtKey: key}
 	}
