@@ -31,6 +31,19 @@ import (
 	"sync"
 )
 
+// SqlStorer interface
+type SqlStorer interface {
+	Connect() error
+	Disconnect() error
+	Exec(query string, data ...interface{}) (sql.Result, error)
+	Query(query string, data ...interface{}) (*sql.Rows, error)
+	PrepareStatement(query string) (*sql.Stmt, error)
+	PrepareAdd(key, query string) error
+	PrepareDel(key string) error
+	QueryPrepared(key string, data ...interface{}) (*sql.Rows, error)
+	ExecPrepared(key string, data ...interface{}) (sql.Result, error)
+}
+
 // UnknownStmtError holds the invalid key which was attempted in a look up.
 type UnknownStmtError struct {
 	StmtKey string // description of key
@@ -61,7 +74,6 @@ type SqlStore struct {
 	dbname       string               // database name to connect to
 	host         string               // database host
 	sslmode      string               // whether we use ssl or not to connect.
-
 }
 
 // New creates a new *SqlStore with the connection properties as arguments.
