@@ -27,7 +27,7 @@ package godbm
 
 import (
 	"database/sql"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	"sync"
 )
 
@@ -234,4 +234,49 @@ func (store *SqlStore) ExecPrepared(key string, data ...interface{}) (result sql
 		return nil, &UnknownStmtError{StmtKey: key}
 	}
 	return stmt.Exec(data...)
+}
+
+// CopyStart opens up a transaction for us with the provided table and column names. Returns the transaction
+// which we'll need to pass back to CopyCommit or CopyCancel along with the statement. The statement is also
+// returned so you can Exec your inserts in a loop or however you want.
+func (store *SqlStore) CopyStart(table string, columns ...string) (txn *sql.Tx, stmt *sql.Stmt, err error) {
+	if !store.Connected {
+		return nil, nil, &ConnectionError{}
+	}
+
+	txn, err = store.db.Begin()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	stmt, err = txn.Prepare(pq.CopyIn(table, columns...))
+	if err != nil {
+		return nil, nil, err
+	}
+	return txn, stmt, nil
+}
+
+// CopyCommit takes the transaction with the statement that you added your inserts, at this point it
+// is still open and waiting to be commited to the server (along with the inserts that were bulk loaded).
+func (store *SqlStore) CopyCommit(txn *sql.Tx, stmt *sql.Stmt) error {
+	if _, err := stmt.Exec(); err != nil {
+		return err
+	}
+
+	if err := stmt.Close(); err != nil {
+		return err
+	}
+
+	if err := txn.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// CopyCancel rolls back the transaction
+func (store *SqlStore) CopyCancel(txn *sql.Tx, stmt *sql.Stmt) error {
+	if err := stmt.Close(); err != nil {
+		return err
+	}
+	return txn.Rollback()
 }

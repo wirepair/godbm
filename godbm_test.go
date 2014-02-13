@@ -141,6 +141,89 @@ func TestPreparedInsertAndQuery(t *testing.T) {
 
 }
 
+func TestCopyIn(t *testing.T) {
+	dbm := New(username, password, dbname, host, false)
+	err := dbm.Connect()
+	if err != nil {
+		t.Fatalf("Error connecting to the testdatabase: %v\n", err)
+	}
+	defer disconnect(t, dbm)
+
+	createTestTable(t, dbm)
+
+	txn, stmt, err := dbm.CopyStart("test", "val1", "val2", "val3")
+	if err != nil {
+		t.Fatalf("error preparing copy: %s\n", err)
+	}
+
+	for i := 0; i < 1000; i++ {
+		_, err := stmt.Exec("abc", "def", i)
+		if err != nil {
+			t.Fatalf("error executing stmt: %s\n", err)
+		}
+	}
+	if err := dbm.CopyCommit(txn, stmt); err != nil {
+		t.Fatalf("error commiting transaction: %s\n", err)
+	}
+}
+
+func BenchmarkCopyIn(b *testing.B) {
+	dbm := New(username, password, dbname, host, false)
+	err := dbm.Connect()
+	if err != nil {
+		b.Fatalf("Error connecting to the testdatabase: %v\n", err)
+	}
+	defer func() {
+		dbm.Exec("drop table test")
+		dbm.Disconnect()
+	}()
+
+	dbm.Exec("create table if not exists test (val1 varchar(5), val2 varchar(10), val3 int)")
+
+	b.ResetTimer()
+	txn, stmt, err := dbm.CopyStart("test", "val1", "val2", "val3")
+	if err != nil {
+		b.Fatalf("error preparing copy: %s\n", err)
+	}
+
+	for i := 0; i < 1000000; i++ {
+		_, err := stmt.Exec("abc", "def", i)
+		if err != nil {
+			b.Fatalf("error executing stmt: %s\n", err)
+		}
+	}
+	if err := dbm.CopyCommit(txn, stmt); err != nil {
+		b.Fatalf("error commiting transaction: %s\n", err)
+	}
+}
+
+func BenchmarkInsert(b *testing.B) {
+	dbm := New(username, password, dbname, host, false)
+	err := dbm.Connect()
+	if err != nil {
+		b.Fatalf("Error connecting to the testdatabase: %v\n", err)
+	}
+	defer func() {
+		dbm.Exec("drop table test")
+		dbm.Disconnect()
+	}()
+
+	dbm.Exec("create table if not exists test (val1 varchar(5), val2 varchar(10), val3 int)")
+
+	err = dbm.PrepareAdd("insert", "insert into test (val1, val2, val3) values ($1, $2, $3)")
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < 1000000; i++ {
+		dbm.ExecPrepared("insert", "abc", "def", i)
+		if err != nil {
+			b.Fatalf("error executing stmt: %s\n", err)
+		}
+	}
+}
+
 //helpers
 func createTestTable(t *testing.T, dbm *SqlStore) {
 	if _, err := dbm.Exec("create table if not exists test (val1 varchar(5), val2 varchar(10), val3 int)"); err != nil {
