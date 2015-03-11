@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2014 isaac dawson
+Copyright (c) 2015 isaac dawson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -73,20 +73,18 @@ type SqlStore struct {
 	password     string               // database password
 	dbname       string               // database name to connect to
 	host         string               // database host
-	sslmode      string               // whether we use ssl or not to connect.
+	sslmode      string               // sslmode one of: require, verify-full, verify-ca, disable. (check postgres docs for more)
+	opts         string               // add your own options.
 }
 
 // New creates a new *SqlStore with the connection properties as arguments.
-func New(username, password, dbname, host string, useSsl bool) *SqlStore {
+func New(username, password, dbname, host, sslmode, opts string) *SqlStore {
 	s := new(SqlStore)
 	s.username = username
 	s.password = password
 	s.host = host
 	s.dbname = dbname
-	s.sslmode = "disable"
-	if useSsl {
-		s.sslmode = "enable"
-	}
+	s.sslmode = sslmode
 	return s
 }
 
@@ -94,7 +92,7 @@ func New(username, password, dbname, host string, useSsl bool) *SqlStore {
 // our connected state to true.
 func (store *SqlStore) Connect() (err error) {
 	store.Connected = false
-	store.db, err = sql.Open("postgres", "user="+store.username+" password="+store.password+" dbname="+store.dbname+" host="+store.host+" sslmode="+store.sslmode)
+	store.db, err = sql.Open("postgres", "user="+store.username+" password="+store.password+" dbname="+store.dbname+" host="+store.host+" sslmode="+store.sslmode+" "+store.opts)
 	if err != nil {
 		return err
 	}
@@ -132,7 +130,7 @@ func (store *SqlStore) Exec(query string, data ...interface{}) (results sql.Resu
 
 }
 
-// Exec creates a new prepared statement, executes and closes. Takes a query string as the first
+// Query creates a new prepared statement, executes and closes. Takes a query string as the first
 // parameter and a variable number of arguments to be used in the statement. Closes the statement
 // when finished and returns *sql.Rows if any. You should only use this for testing as creating new
 // statements every time is non-performant.

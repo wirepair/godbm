@@ -23,7 +23,7 @@ const (
 )
 
 func main() {
-	dbm := godbm.New(username, password, dbname, host, false)
+	dbm := godbm.New(username, password, dbname, host, "verify-full")
 	if err := dbm.Connect(); err != nil {
 		log.Fatalf("Error connecting to database: %v\n", err)
 	}
