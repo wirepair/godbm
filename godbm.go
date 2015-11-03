@@ -278,3 +278,8 @@ func (store *SqlStore) CopyCancel(txn *sql.Tx, stmt *sql.Stmt) error {
 	}
 	return txn.Rollback()
 }
+
+// Allow access to underlying DB so user can create custom transactions.
+func (store *SqlStore) Db() *sql.DB {
+	return store.db
+}
