@@ -1,7 +1,7 @@
 /*
 The MIT License (MIT)
 
-Copyright (c) 2015 isaac dawson
+Copyright (c) 2016 isaac dawson
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -39,6 +39,7 @@ type SqlStorer interface {
 	Query(query string, data ...interface{}) (*sql.Rows, error)
 	PrepareStatement(query string) (*sql.Stmt, error)
 	PrepareAdd(key, query string) error
+	HasStatement(key string) bool
 	PrepareDel(key string) error
 	QueryPrepared(key string, data ...interface{}) (*sql.Rows, error)
 	ExecPrepared(key string, data ...interface{}) (sql.Result, error)
@@ -200,6 +201,14 @@ func (store *SqlStore) PrepareDel(key string) (err error) {
 	return err
 }
 
+// returns true if the statement has been added
+func (store *SqlStore) HasStatement(key string) bool {
+	store.RLock()
+	_, found := store.queries[key]
+	store.RUnlock()
+	return found
+}
+
 // QueryPrepared executes a prepared statement which is looked up by the provided key. If the key was
 // not found, an UnknownStmtError is returned. This method takes a variable number of arguments to
 // pass to the underlying statement and returns *sql.Rows or an error.
@@ -246,12 +255,25 @@ func (store *SqlStore) CopyStart(table string, columns ...string) (txn *sql.Tx, 
 	if err != nil {
 		return nil, nil, err
 	}
+	stmt, err = store.copyStart(txn, table, columns...)
+	return txn, stmt, err
+}
 
+// Same as above but uses the provided transaction that was already opened by the caller
+func (store *SqlStore) CopyStartWithTxn(txn *sql.Tx, table string, columns ...string) (stmt *sql.Stmt, err error) {
+	if !store.Connected {
+		return nil, &ConnectionError{}
+	}
+	return store.copyStart(txn, table, columns...)
+}
+
+// Prepares the transaction for pq.CopyIn.
+func (store *SqlStore) copyStart(txn *sql.Tx, table string, columns ...string) (stmt *sql.Stmt, err error) {
 	stmt, err = txn.Prepare(pq.CopyIn(table, columns...))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	return txn, stmt, nil
+	return stmt, nil
 }
 
 // CopyCommit takes the transaction with the statement that you added your inserts, at this point it

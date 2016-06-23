@@ -12,7 +12,7 @@ const (
 )
 
 func TestConnect(t *testing.T) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		t.Fatalf("Error connecting to the testdatabase: %v\n", err)
@@ -20,7 +20,7 @@ func TestConnect(t *testing.T) {
 }
 
 func TestDisconnect(t *testing.T) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		t.Fatalf("Error connecting to the testdatabase: %v\n", err)
@@ -30,7 +30,7 @@ func TestDisconnect(t *testing.T) {
 }
 
 func TestAddStatements(t *testing.T) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		t.Fatalf("Error connecting to the testdatabase: %v\n", err)
@@ -42,7 +42,7 @@ func TestAddStatements(t *testing.T) {
 }
 
 func TestDelStatements(t *testing.T) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		t.Fatalf("Error connecting to the testdatabase: %v\n", err)
@@ -61,7 +61,7 @@ func TestDelStatements(t *testing.T) {
 }
 
 func TestExec(t *testing.T) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		t.Fatalf("Error connecting to the testdatabase: %v\n", err)
@@ -74,7 +74,7 @@ func TestExec(t *testing.T) {
 }
 
 func TestQuery(t *testing.T) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		t.Fatalf("Error connecting to the testdatabase: %v\n", err)
@@ -97,7 +97,7 @@ func TestQuery(t *testing.T) {
 }
 
 func TestPreparedInsertAndQuery(t *testing.T) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		t.Fatalf("Error connecting to the testdatabase: %v\n", err)
@@ -142,7 +142,7 @@ func TestPreparedInsertAndQuery(t *testing.T) {
 }
 
 func TestCopyIn(t *testing.T) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		t.Fatalf("Error connecting to the testdatabase: %v\n", err)
@@ -168,7 +168,7 @@ func TestCopyIn(t *testing.T) {
 }
 
 func BenchmarkCopyIn(b *testing.B) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		b.Fatalf("Error connecting to the testdatabase: %v\n", err)
@@ -198,7 +198,7 @@ func BenchmarkCopyIn(b *testing.B) {
 }
 
 func BenchmarkInsert(b *testing.B) {
-	dbm := New(username, password, dbname, host, "disable")
+	dbm := New(username, password, dbname, host, "disable", "")
 	err := dbm.Connect()
 	if err != nil {
 		b.Fatalf("Error connecting to the testdatabase: %v\n", err)
